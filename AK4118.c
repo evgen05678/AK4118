@@ -8,7 +8,7 @@
 
 #include "AK4118.h"
 
-
+extern I2C_HandleTypeDef hi2c3;
 /**
  * @fn HAL_StatusTypeDef AK4118_Init(ak4118_dev_s*)
  * @brief
@@ -19,15 +19,19 @@
  * @return
  */
 HAL_StatusTypeDef AK4118_Init(ak4118_dev_s *dev){
-	HAL_StatusTypeDef status;
-	uint8_t rxBuffer[0x28];
+	HAL_StatusTypeDef status = HAL_ERROR;
+	uint8_t rxBuffer[0x28] ={0};
+	int counter = 0;
 #ifdef USE_FREERTOS
 
 #elif USE_THREADX
 	tx_mutex_get(dev->mutex, TX_WAIT_FOREVER);
 #endif
-	status = HAL_I2C_Mem_Read(dev->i2c_port, dev->DevAddr, CLK_PDN_Control_REG_ADDR,
-			I2C_MEMADD_SIZE_8BIT, rxBuffer, 0x28, 100);
+	while (status != HAL_OK){
+	status = HAL_I2C_Mem_Read(dev->i2c_port, dev->DevAddr_read, CLK_PDN_Control_REG_ADDR,
+			I2C_MEMADD_SIZE_8BIT, rxBuffer, 0x28, 1);
+    counter++;
+	}
 #ifdef USE_FREERTOS
 
 #elif USE_THREADX
@@ -48,7 +52,6 @@ HAL_StatusTypeDef AK4118_Init(ak4118_dev_s *dev){
 	dev->regMap.GPE.reg = rxBuffer[GPE_REG_ADDR];
 	dev->regMap.GPLDR.reg = rxBuffer[GPLR_REG_ADDR];
 	dev->regMap.GPSCR.reg = rxBuffer[GPSCR_REG_ADDR];
-
 	return status;
 }
 
@@ -140,7 +143,7 @@ HAL_StatusTypeDef AK4118_ReadRegister(ak4118_dev_s *dev, uint8_t regAddr, uint8_
 #elif USE_THREADX
 	tx_mutex_get(dev->mutex, TX_WAIT_FOREVER);
 #endif
-	status = HAL_I2C_Mem_Read(dev->i2c_port, dev->DevAddr, regAddr,
+	status = HAL_I2C_Mem_Read(dev->i2c_port, dev->DevAddr_read, regAddr,
 			I2C_MEMADD_SIZE_8BIT, reg, 1, 100);
 #ifdef USE_FREERTOS
 
@@ -168,7 +171,7 @@ HAL_StatusTypeDef AK4118_WriteRegister(ak4118_dev_s *dev, uint8_t regAddr, uint8
 #elif USE_THREADX
 	tx_mutex_get(dev->mutex, TX_WAIT_FOREVER);
 #endif
-	status = HAL_I2C_Mem_Write(dev->i2c_port, dev->DevAddr, regAddr,
+	status = HAL_I2C_Mem_Write(dev->i2c_port, dev->DevAddr_write, regAddr,
 			I2C_MEMADD_SIZE_8BIT, value, 1, 100);
 #ifdef USE_FREERTOS
 
